@@ -1,0 +1,176 @@
+Here are good sample questions you can ask on that knowledge base.
+
+Basic process understanding
+    What are the main process steps from cotton bale to yarn?
+    How does cotton move from bale opening to final yarn package?
+    What is the difference between fiber preparation, spinning preparation, and end spinning?
+    Which process steps are optional in the bale-to-yarn flow?
+Machine-by-machine questions
+    What does UNIfloc A 12 do in the spinning process?
+    What is the role of VARIOline in blowroom?
+    What does the card C 81 do to the fiber?
+    What is the function of RSB-D 27 in the line?
+    When is SB-D 27 used instead of RSB-D 27?
+    What does the comber E 90 improve in yarn quality?
+    What is the purpose of the draw frame after carding?
+    What does the roving frame F 40 do before ring spinning?
+    What is the difference between F 40 and F 20?
+    What does the ring spinning machine G 38 produce?
+    Why is Autoconer X6 used after spinning?
+Flow and interaction questions
+    How do the machines interact with each other from blowroom to ring spinning?
+    What is the output of each machine and the input to the next machine?
+    How does material change form as it passes through each machine?
+    Which machine receives sliver and which machine produces roving?
+    Which machine converts roving into yarn?
+    What happens between carding and ring spinning?
+    How does the winding machine fit into the overall flow?
+Quality and purpose questions
+    Which machine is most important for yarn evenness?
+    Which process step removes short fibers?
+    How does combing improve yarn quality?
+    Why is draw frame doubling important?
+    Why is roving needed before ring spinning?
+    Which machines contribute most to yarn strength and uniformity?
+    At what stage are imperfections reduced the most?
+    Which step is mainly responsible for cleaning and opening cotton?
+Comparison questions
+    What is the difference between carding and combing?
+    What is the difference between draw frame and roving frame?
+    What is the difference between ring spinning and winding?
+    Compare fiber preparation and spinning preparation.
+    Compare RSB-D 27 and SB-D 27.
+    Compare F 40 and F 20.
+    What is the difference between a sliver, roving, and yarn?
+Traceability questions
+    Starting from cotton bale, which machines does the material pass through before becoming yarn?
+    If the final product is cone yarn, what is the full machine sequence?
+    Which machine comes immediately after card C 81?
+    Which machine comes before G 38?
+    What is the last machine in the line?
+    What is the first machine that directly individualizes fibers from cotton bales?
+Use-case questions for an AI assistant demo
+    Explain the bale-to-yarn process in simple terms for a new trainee.
+    Give me the machine sequence for a ring spinning mill.
+    Which machines are involved if combing is included?
+    Which machines are mandatory and which are optional in a cotton spinning line?
+    Summarize the role of each machine in one line.
+    Create a table of process step, machine, input material, output material.
+    Show me all machines used in spinning preparation.
+    Which machine should I study if I want to understand yarn quality improvement?
+    If I only know the machine name G 38, where does it fit in the process?
+    How does Rieter organize the spinning process into stages?
+Troubleshooting-style questions
+    If yarn quality is poor, which upstream machines should be checked first?
+    If sliver irregularity is found, which machine may be responsible?
+    If short fiber removal is needed, which process should be reviewed?
+    If the yarn package is not suitable for downstream use, which machine should be checked?
+    Which process steps have the biggest effect on cleaning, parallelization, and drafting?
+Business / plant understanding questions
+    Which Rieter machines belong to fiber preparation?
+    Which Rieter machines belong to spinning preparation?
+    Which Rieter machines belong to end spinning?
+    What are the main outputs at each process stage?
+    How does a cotton spinning mill convert raw cotton into saleable yarn?
+
+Golden set of 100 evaluation questions for testing this app:
+    What are the main stages in converting cotton bale into yarn?
+    How does Rieter divide the spinning process at a high level?
+    What is the first process step after cotton bales enter the mill?
+    What is the final output of the complete cotton-to-yarn line?
+    What is meant by fiber preparation in this process?
+    What is meant by spinning preparation?
+    What is meant by end spinning?
+    Which stages are mandatory in a basic ring spinning line?
+    Which process steps may be optional depending on yarn quality requirements?
+    Give an overview of the cotton bale to yarn journey in simple terms.
+    What is the full machine sequence from bale opening to yarn package?
+    Which machine comes immediately after UNIfloc A 12?
+    Which machine comes after VARIOline?
+    Which machine follows the card C 81 in the process?
+    Which machine comes after the draw frame?
+    Which machine is used before ring spinning?
+    Which machine comes after ring spinning if winding is included?
+    What is the order of machines in the line when combing is part of the process?
+    What is the order of machines in the line when combing is not used?
+    Starting from bale opening, trace the material path until the yarn is wound.
+    What is the role of UNIfloc A 12?
+    What does VARIOline do in the blowroom process?
+    What is the purpose of card C 81?
+    What is the role of RSB-D 27?
+    What is the role of SB-D 27?
+    What does comber E 90 do?
+    What is the function of roving frame F 40?
+    What is the function of roving frame F 20?
+    What does ring spinning machine G 38 do?
+    What is the purpose of Autoconer X6?
+    What is the input to UNIfloc A 12 and what does it output?
+    What material enters VARIOline and what comes out of it?
+    What is the input and output of card C 81?
+    What material does the draw frame receive and what does it deliver?
+    What is the input and output of comber E 90?
+    What goes into the roving frame and what comes out?
+    What is fed into the ring spinning machine?
+    What is the direct output of G 38?
+    What is the input to Autoconer X6?
+    At which machine does the material become yarn?
+    How does cotton change physically from bale opening to carding?
+    At what stage does loose cotton become sliver?
+    At what stage does sliver become more uniform?
+    At what stage does sliver become roving?
+    At what stage does roving become yarn?
+    How does the form of material change after winding?
+    What are the key material forms seen along the process route?
+    Explain the difference between cotton flocks, sliver, roving, and yarn.
+    At which stage is the material condensed into a package suitable for later use?
+    How does material transformation reflect the purpose of each machine?
+    Is combing always present in the cotton-to-yarn process?
+    When is combing included in the process route?
+    What changes in the machine sequence when combing is added?
+    What is the purpose of the optional combing stage?
+    Is winding always necessary after ring spinning?
+    What changes when the winding machine is included?
+    Which machines are optional in a higher-quality yarn route?
+    How would the process differ for a line without combing?
+    How would the process differ for a line without winding?
+    Which stages are quality-enhancing rather than strictly essential?
+    What is the difference between fiber preparation and spinning preparation?
+    What is the difference between carding and combing?
+    What is the difference between RSB-D 27 and SB-D 27?
+    What is the difference between F 40 and F 20?
+    What is the difference between roving frame and ring spinning machine?
+    What is the difference between ring spinning and winding?
+    What is the difference between sliver and roving?
+    What is the difference between roving and yarn?
+    Compare the role of card C 81 and comber E 90.
+    Compare the output of G 38 and Autoconer X6.
+    Which process step is mainly responsible for cleaning and opening the cotton?
+    Which machine is responsible for carding the fibers?
+    Which step improves fiber parallelization and sliver uniformity?
+    Which process removes short fibers and impurities more selectively?
+    Which machine contributes directly to producing finer, more even feed for spinning?
+    Which machine prepares roving before yarn formation?
+    Which machines have a major impact on yarn quality?
+    How does combing improve yarn quality?
+    Why is draw frame processing important for yarn consistency?
+    Why is winding important even after yarn has already been spun?
+    Why can ring spinning not happen directly after bale opening?
+    Why is draw frame processing needed after carding?
+    Why is a roving stage used before ring spinning?
+    Why is combing positioned after earlier preparation stages instead of at the very beginning?
+    Why is winding placed after yarn formation rather than before it?
+    Why must cotton be cleaned and opened before carding?
+    Why is sliver uniformity important before further processing?
+    Why does the material go through multiple machines before becoming yarn?
+    Why is the process broken into stages instead of using one machine end to end?
+    Why do optional machines exist in addition to the main process line?
+    Explain the full cotton-to-yarn process for a beginner.
+    Summarize the role of each machine in one line.
+    Explain the process as if teaching a new trainee in a spinning mill.
+    Summarize the machine sequence in under 10 bullet points.
+    Give a stage-wise explanation of the process from bale opening to winding.
+    Describe the process without using machine names.
+    Describe the process using only machine names and outputs.
+    Create a concise explanation of how cotton becomes yarn.
+    Summarize the optional and mandatory parts of the line.
+    If I want to understand the whole system quickly, which machines should I study first and why?

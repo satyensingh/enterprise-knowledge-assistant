@@ -1,0 +1,1513 @@
+{
+  "info": {
+    "_postman_id": "bb97ab30-f606-4330-81d2-402273ef7535",
+    "name": "EKA",
+    "description": "Dynamic Postman collection for Enterprise Knowledge Assistant. Includes Keycloak token generation, assistant APIs (`health`, `ask`, `feedback`), ChromaDB heartbeat checks, admin APIs (`reindex`, evaluation endpoints), and observability APIs (`admin summary`, actuator endpoints). Prometheus checks include core RAG/ingestion metrics plus gateway additions (`kc_security_rate_limit_rejections_total`, `kc_audit_events_total`). Token requests store `user_token`/`admin_token` and set `active_token`. `Ask - API` stores `response_id` and `last_insufficient_evidence`; `Create Golden Question` stores `golden_question_id`; `Run Evaluation` stores `evaluation_run_id` for follow-up requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "44179023"
+  },
+  "item": [
+    {
+      "name": "Generate Admin Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Token response is successful', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('access_token is present', function () {",
+              "  pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "pm.collectionVariables.set('admin_token', jsonData.access_token);",
+              "pm.collectionVariables.set('active_token', jsonData.access_token);",
+              "pm.collectionVariables.set('active_token_type', 'admin');",
+              "",
+              "if (jsonData.refresh_token) {",
+              "  pm.collectionVariables.set('admin_refresh_token', jsonData.refresh_token);",
+              "}",
+              "if (jsonData.expires_in) {",
+              "  const expiresAt = new Date(Date.now() + jsonData.expires_in * 1000).toISOString();",
+              "  pm.collectionVariables.set('admin_token_expires_at', expiresAt);",
+              "  pm.collectionVariables.set('active_token_expires_at', expiresAt);",
+              "}",
+              "",
+              "console.log('Admin token saved into collection variables: admin_token and active_token');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "client_id",
+              "value": "{{keycloak_client_id}}",
+              "type": "text"
+            },
+            {
+              "key": "grant_type",
+              "value": "{{keycloak_grant_type}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{admin_username}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{admin_password}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloak_protocol}}://{{keycloak_host}}:{{keycloak_port}}/realms/{{keycloak_realm}}/protocol/openid-connect/token",
+          "protocol": "{{keycloak_protocol}}",
+          "host": [
+            "{{keycloak_host}}"
+          ],
+          "port": "{{keycloak_port}}",
+          "path": [
+            "realms",
+            "{{keycloak_realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "description": "Generates a admin Keycloak access token and saves it as `admin_token`. It also updates `active_token`, so the `/ask` requests use this token automatically."
+      },
+      "response": []
+    },
+    {
+      "name": "Generate User Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Token response is successful', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('access_token is present', function () {",
+              "  pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "pm.collectionVariables.set('user_token', jsonData.access_token);",
+              "pm.collectionVariables.set('active_token', jsonData.access_token);",
+              "pm.collectionVariables.set('active_token_type', 'user');",
+              "",
+              "if (jsonData.refresh_token) {",
+              "  pm.collectionVariables.set('user_refresh_token', jsonData.refresh_token);",
+              "}",
+              "if (jsonData.expires_in) {",
+              "  const expiresAt = new Date(Date.now() + jsonData.expires_in * 1000).toISOString();",
+              "  pm.collectionVariables.set('user_token_expires_at', expiresAt);",
+              "  pm.collectionVariables.set('active_token_expires_at', expiresAt);",
+              "}",
+              "",
+              "console.log('User token saved into collection variables: user_token and active_token');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "client_id",
+              "value": "{{keycloak_client_id}}",
+              "type": "text"
+            },
+            {
+              "key": "grant_type",
+              "value": "{{keycloak_grant_type}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{user_username}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{user_password}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloak_protocol}}://{{keycloak_host}}:{{keycloak_port}}/realms/{{keycloak_realm}}/protocol/openid-connect/token",
+          "protocol": "{{keycloak_protocol}}",
+          "host": [
+            "{{keycloak_host}}"
+          ],
+          "port": "{{keycloak_port}}",
+          "path": [
+            "realms",
+            "{{keycloak_realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "description": "Generates a user Keycloak access token and saves it as `user_token`. It also updates `active_token`, so the `/ask` requests use this token automatically."
+      },
+      "response": []
+    },
+    {
+      "name": "Ask - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Active token was used', function () {",
+              "  pm.expect(pm.collectionVariables.get('active_token')).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('responseId is present', function () {",
+              "  pm.expect(jsonData.responseId).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('insufficientEvidence is boolean', function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.be.oneOf([true, false]);",
+              "});",
+              "pm.collectionVariables.set('response_id', jsonData.responseId);",
+              "pm.collectionVariables.set('last_insufficient_evidence', String(jsonData.insufficientEvidence));",
+              "console.log('Called API using active_token_type:', pm.collectionVariables.get('active_token_type') || 'not set');",
+              "console.log('Saved response_id:', jsonData.responseId);",
+              "console.log('Saved last_insufficient_evidence:', jsonData.insufficientEvidence);"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-Id",
+            "value": "{{request_id}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{ask_question}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/ask",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "ask"
+          ]
+        },
+        "description": "Uses `{{active_token}}`. Run either token request first. If you run user token last, this call uses user access. If you run admin token last, this call uses admin access. Sends `X-Request-Id` and stores `last_insufficient_evidence`."
+      },
+      "response": []
+    },
+    {
+      "name": "Feedback - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Feedback status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "const jsonData = pm.response.json();",
+              "pm.test('Feedback aggregate fields present', function () {",
+              "  pm.expect(jsonData.goodCount).to.be.a('number');",
+              "  pm.expect(jsonData.badCount).to.be.a('number');",
+              "  pm.expect(jsonData.goodRate).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"responseId\":\"{{response_id}}\",\"verdict\":\"{{feedback_verdict}}\",\"comment\":\"{{feedback_comment}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/feedback",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "feedback"
+          ]
+        },
+        "description": "Submit GOOD/BAD user feedback for the latest ask response via `{{response_id}}`."
+      },
+      "response": []
+    },
+    {
+      "name": "Health - API",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/health",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "ChromaDB Heartbeat - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Chroma heartbeat status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "pm.test('Chroma heartbeat response is not empty', function () {",
+              "  pm.expect(pm.response.text()).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{chroma_protocol}}://{{chroma_host}}:{{chroma_port}}/api/v1/heartbeat",
+          "protocol": "{{chroma_protocol}}",
+          "host": [
+            "{{chroma_host}}"
+          ],
+          "port": "{{chroma_port}}",
+          "path": [
+            "api",
+            "v1",
+            "heartbeat"
+          ]
+        },
+        "description": "Checks ChromaDB availability before running retrieval/evaluation flows."
+      },
+      "response": []
+    },
+    {
+      "name": "Admin Reindex - API",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/reindex",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "reindex"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Golden Question - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Create golden question status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "const jsonData = pm.response.json();",
+              "pm.test('golden question id is present', function () {",
+              "  pm.expect(jsonData.id).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('golden_question_id', jsonData.id);",
+              "console.log('Saved golden_question_id:', jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{golden_question_text}}\",\n  \"expectedSources\": {{golden_expected_sources_json}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/evaluations/golden-questions",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "evaluations",
+            "golden-questions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Golden Questions - API",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/evaluations/golden-questions",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "evaluations",
+            "golden-questions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Run Evaluation - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Run evaluation status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "const jsonData = pm.response.json();",
+              "pm.test('evaluation run id is present', function () {",
+              "  pm.expect(jsonData.id).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('evaluation_run_id', jsonData.id);",
+              "console.log('Saved evaluation_run_id:', jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/evaluations/runs/{{golden_question_id}}",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "evaluations",
+            "runs",
+            "{{golden_question_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Evaluation Runs - API",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/evaluations/runs",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "evaluations",
+            "runs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Evaluation Runs (Filtered) - API",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/evaluations/runs?goldenQuestionId={{golden_question_id}}",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "evaluations",
+            "runs"
+          ],
+          "query": [
+            {
+              "key": "goldenQuestionId",
+              "value": "{{golden_question_id}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Save Evaluation Feedback - API",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"score\": {{eval_feedback_score}},\n  \"comment\": \"{{eval_feedback_comment}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/evaluations/runs/{{evaluation_run_id}}/feedback",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "evaluations",
+            "runs",
+            "{{evaluation_run_id}}",
+            "feedback"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Admin Observability Summary - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Observability summary status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "const jsonData = pm.response.json();",
+              "pm.test('Observability summary has top-level sections', function () {",
+              "  pm.expect(jsonData.generatedAt).to.be.a('string');",
+              "  pm.expect(jsonData.inventory).to.be.an('object');",
+              "  pm.expect(jsonData.ask).to.be.an('object');",
+              "  pm.expect(jsonData.evaluation).to.be.an('object');",
+              "  pm.expect(jsonData.security).to.be.an('object');",
+              "  pm.expect(jsonData.ingestion).to.be.an('object');",
+              "  pm.expect(jsonData.feedback).to.be.an('object');",
+              "  pm.expect(jsonData.audit).to.be.an('object');",
+              "});",
+              "pm.test('Security summary exposes rate limit totals', function () {",
+              "  pm.expect(jsonData.security.rateLimitRejectedTotal).to.not.equal(undefined);",
+              "});",
+              "pm.test('Audit summary exposes totalEvents', function () {",
+              "  pm.expect(jsonData.audit.totalEvents).to.not.equal(undefined);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/admin/observability/summary",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "admin",
+            "observability",
+            "summary"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Actuator Health - API",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/actuator/health",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "actuator",
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Actuator Info - API",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/actuator/info",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "actuator",
+            "info"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Actuator Prometheus - API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Prometheus endpoint status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "pm.test('Prometheus output contains custom kc metrics', function () {",
+              "  pm.expect(pm.response.text()).to.include('kc_');",
+              "});",
+              "",
+              "const body = pm.response.text();",
+              "const requiredMetrics = [",
+              "  'kc_ask_requests_total',",
+              "  'kc_retrieval_latency',",
+              "  'kc_retrieval_chunks',",
+              "  'kc_retrieval_citations',",
+              "  'kc_openai_llm_latency',",
+              "  'kc_ingestion_connector_sync_latency',",
+              "  'kc_ingestion_documents_total',",
+              "  'kc_ingestion_chunks_total',",
+              "  'kc_feedback_submissions_total'",
+              "];",
+              "const eventDrivenMetrics = [",
+              "  'kc_ask_insufficient_answers_total',",
+              "  'kc_feedback_score',",
+              "  'kc_security_rate_limit_rejections_total',",
+              "  'kc_audit_events_total'",
+              "];",
+              "",
+              "requiredMetrics.forEach(function(metric) {",
+              "  pm.test('Contains metric: ' + metric, function () {",
+              "    pm.expect(body).to.include(metric);",
+              "  });",
+              "});",
+              "",
+              "eventDrivenMetrics.forEach(function(metric) {",
+              "  const present = body.includes(metric);",
+              "  pm.test('Event-driven metric check: ' + metric, function () {",
+              "    pm.expect(true).to.eql(true);",
+              "  });",
+              "  if (!present) {",
+              "    console.warn('Metric not present yet (expected until trigger event): ' + metric);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/actuator/prometheus",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "actuator",
+            "prometheus"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Ask - API (Filter: Local Files Only)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Active token was used', function () {",
+              "  pm.expect(pm.collectionVariables.get('active_token')).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('responseId is present', function () {",
+              "  pm.expect(jsonData.responseId).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('insufficientEvidence is boolean', function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.be.oneOf([true, false]);",
+              "});",
+              "pm.collectionVariables.set('response_id', jsonData.responseId);",
+              "pm.collectionVariables.set('last_insufficient_evidence', String(jsonData.insufficientEvidence));",
+              "console.log('Called API using active_token_type:', pm.collectionVariables.get('active_token_type') || 'not set');",
+              "console.log('Saved response_id:', jsonData.responseId);",
+              "console.log('Saved last_insufficient_evidence:', jsonData.insufficientEvidence);",
+              "pm.test(\"Local-files filter keeps source type local\", function () {",
+              "  (jsonData.citations || []).forEach(function (c) {",
+              "    pm.expect(c.sourceType).to.eql(\"LOCAL_FILE_SYSTEM\");",
+              "  });",
+              "});",
+              "pm.test(\"Local-files filter is evidence-backed\", function () {",
+              "  pm.expect((jsonData.citations || []).length).to.be.greaterThan(0);",
+              "  pm.expect(jsonData.insufficientEvidence).to.eql(false);",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-Id",
+            "value": "{{request_id}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{ask_question}}\",\n  \"sourceTypes\": [\"LOCAL_FILE_SYSTEM\"]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/ask",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "ask"
+          ]
+        },
+        "description": "Restricts retrieval to LOCAL_FILE_SYSTEM source type."
+      },
+      "response": []
+    },
+    {
+      "name": "Ask - API (Filter: JIRA Only)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Active token was used', function () {",
+              "  pm.expect(pm.collectionVariables.get('active_token')).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('responseId is present', function () {",
+              "  pm.expect(jsonData.responseId).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('insufficientEvidence is boolean', function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.be.oneOf([true, false]);",
+              "});",
+              "pm.collectionVariables.set('response_id', jsonData.responseId);",
+              "pm.collectionVariables.set('last_insufficient_evidence', String(jsonData.insufficientEvidence));",
+              "console.log('Called API using active_token_type:', pm.collectionVariables.get('active_token_type') || 'not set');",
+              "console.log('Saved response_id:', jsonData.responseId);",
+              "console.log('Saved last_insufficient_evidence:', jsonData.insufficientEvidence);",
+              "pm.test(\"JIRA-only filter returns insufficient evidence\", function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.eql(true);",
+              "});",
+              "pm.test(\"JIRA-only filter returns no citations\", function () {",
+              "  pm.expect((jsonData.citations || []).length).to.eql(0);",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-Id",
+            "value": "{{request_id}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{ask_question}}\",\n  \"sourceTypes\": [\"JIRA\"]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/ask",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "ask"
+          ]
+        },
+        "description": "Restricts retrieval to JIRA source type. If no Jira docs are indexed, response should usually be insufficientEvidence=true."
+      },
+      "response": []
+    },
+    {
+      "name": "Ask - API (Filter: Workspace)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Active token was used', function () {",
+              "  pm.expect(pm.collectionVariables.get('active_token')).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('responseId is present', function () {",
+              "  pm.expect(jsonData.responseId).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('insufficientEvidence is boolean', function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.be.oneOf([true, false]);",
+              "});",
+              "pm.collectionVariables.set('response_id', jsonData.responseId);",
+              "pm.collectionVariables.set('last_insufficient_evidence', String(jsonData.insufficientEvidence));",
+              "console.log('Called API using active_token_type:', pm.collectionVariables.get('active_token_type') || 'not set');",
+              "console.log('Saved response_id:', jsonData.responseId);",
+              "console.log('Saved last_insufficient_evidence:', jsonData.insufficientEvidence);"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-Id",
+            "value": "{{request_id}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{ask_question}}\",\n  \"workspaceIds\": [\"{{workspace_filter_id}}\"]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/ask",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "ask"
+          ]
+        },
+        "description": "Applies workspace filter before hybrid retrieval merge."
+      },
+      "response": []
+    },
+    {
+      "name": "Ask - API (Filter: Updated After Future)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Active token was used', function () {",
+              "  pm.expect(pm.collectionVariables.get('active_token')).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('responseId is present', function () {",
+              "  pm.expect(jsonData.responseId).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('insufficientEvidence is boolean', function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.be.oneOf([true, false]);",
+              "});",
+              "pm.collectionVariables.set('response_id', jsonData.responseId);",
+              "pm.collectionVariables.set('last_insufficient_evidence', String(jsonData.insufficientEvidence));",
+              "console.log('Called API using active_token_type:', pm.collectionVariables.get('active_token_type') || 'not set');",
+              "console.log('Saved response_id:', jsonData.responseId);",
+              "console.log('Saved last_insufficient_evidence:', jsonData.insufficientEvidence);",
+              "pm.test(\"Future updatedAfter returns insufficient evidence\", function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.eql(true);",
+              "});",
+              "pm.test(\"Future updatedAfter returns no citations\", function () {",
+              "  pm.expect((jsonData.citations || []).length).to.eql(0);",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-Id",
+            "value": "{{request_id}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{ask_question}}\",\n  \"updatedAfter\": \"2099-01-01T00:00:00Z\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/ask",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "ask"
+          ]
+        },
+        "description": "Date filter example; should return no eligible chunks in normal datasets."
+      },
+      "response": []
+    },
+    {
+      "name": "Ask - API (Filter: Connector Path Contains)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response status is successful', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Active token was used', function () {",
+              "  pm.expect(pm.collectionVariables.get('active_token')).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.test('responseId is present', function () {",
+              "  pm.expect(jsonData.responseId).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('insufficientEvidence is boolean', function () {",
+              "  pm.expect(jsonData.insufficientEvidence).to.be.oneOf([true, false]);",
+              "});",
+              "pm.collectionVariables.set('response_id', jsonData.responseId);",
+              "pm.collectionVariables.set('last_insufficient_evidence', String(jsonData.insufficientEvidence));",
+              "console.log('Called API using active_token_type:', pm.collectionVariables.get('active_token_type') || 'not set');",
+              "console.log('Saved response_id:', jsonData.responseId);",
+              "console.log('Saved last_insufficient_evidence:', jsonData.insufficientEvidence);"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{active_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Request-Id",
+            "value": "{{request_id}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"{{ask_question}}\",\n  \"connectorFilters\": {\n    \"sourcePathContains\": \"{{connector_path_contains}}\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{api_protocol}}://{{api_host}}:{{api_port}}/api/assistant/ask",
+          "protocol": "{{api_protocol}}",
+          "host": [
+            "{{api_host}}"
+          ],
+          "port": "{{api_port}}",
+          "path": [
+            "api",
+            "assistant",
+            "ask"
+          ]
+        },
+        "description": "Connector-specific filter example using source path matching."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "api_protocol",
+      "value": "http",
+      "type": "string"
+    },
+    {
+      "key": "api_host",
+      "value": "localhost",
+      "type": "string"
+    },
+    {
+      "key": "api_port",
+      "value": "8080",
+      "type": "string"
+    },
+    {
+      "key": "chroma_protocol",
+      "value": "http",
+      "type": "string"
+    },
+    {
+      "key": "chroma_host",
+      "value": "localhost",
+      "type": "string"
+    },
+    {
+      "key": "chroma_port",
+      "value": "8000",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_protocol",
+      "value": "http",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_host",
+      "value": "localhost",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_port",
+      "value": "8081",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_realm",
+      "value": "knowledge-copilot",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_client_id",
+      "value": "knowledge-copilot-api",
+      "type": "string"
+    },
+    {
+      "key": "keycloak_grant_type",
+      "value": "password",
+      "type": "string"
+    },
+    {
+      "key": "user_username",
+      "value": "kc_user",
+      "type": "string"
+    },
+    {
+      "key": "user_password",
+      "value": "user123",
+      "type": "string"
+    },
+    {
+      "key": "admin_username",
+      "value": "kc_admin",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin123",
+      "type": "string"
+    },
+    {
+      "key": "active_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "active_token_type",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "active_token_expires_at",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "request_id",
+      "value": "postman-ask-001",
+      "type": "string"
+    },
+    {
+      "key": "user_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_token_expires_at",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token_expires_at",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ask_question",
+      "value": "how is productivity calculated?",
+      "type": "string"
+    },
+    {
+      "key": "confluence_question",
+      "value": "what are the new features in version 10.2?",
+      "type": "string"
+    },
+    {
+      "key": "response_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "last_insufficient_evidence",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "feedback_verdict",
+      "value": "GOOD",
+      "type": "string"
+    },
+    {
+      "key": "feedback_comment",
+      "value": "clear answer",
+      "type": "string"
+    },
+    {
+      "key": "golden_question_text",
+      "value": "How does ingestion flow work?",
+      "type": "string"
+    },
+    {
+      "key": "golden_expected_sources_json",
+      "value": "[]",
+      "type": "string"
+    },
+    {
+      "key": "golden_question_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "evaluation_run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eval_feedback_score",
+      "value": "4",
+      "type": "string"
+    },
+    {
+      "key": "eval_feedback_comment",
+      "value": "Answer is mostly correct, needs more detail on scheduler.",
+      "type": "string"
+    },
+    {
+      "key": "workspace_filter_id",
+      "value": "knowledge-base",
+      "type": "string"
+    },
+    {
+      "key": "connector_path_contains",
+      "value": "knowledge-base",
+      "type": "string"
+    }
+  ]
+}

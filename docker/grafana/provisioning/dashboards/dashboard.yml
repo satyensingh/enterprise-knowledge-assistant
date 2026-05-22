@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: knowledge-copilot
+    orgId: 1
+    folder: Knowledge Copilot
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

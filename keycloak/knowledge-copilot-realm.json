@@ -1,0 +1,79 @@
+{
+  "realm": "knowledge-copilot",
+  "enabled": true,
+  "displayName": "Knowledge Copilot",
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Regular assistant user"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrator user"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "knowledge-copilot-api",
+      "name": "Knowledge Copilot API Client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      },
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "kc_user",
+      "enabled": true,
+      "email": "kc_user@example.com",
+      "emailVerified": true,
+      "firstName": "Knowledge",
+      "lastName": "User",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "USER"
+      ]
+    },
+    {
+      "username": "kc_admin",
+      "enabled": true,
+      "email": "kc_admin@example.com",
+      "emailVerified": true,
+      "firstName": "Knowledge",
+      "lastName": "Admin",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    }
+  ]
+}

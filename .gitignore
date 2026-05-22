@@ -1,0 +1,31 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IntelliJ / JetBrains
+.idea/
+*.iml
+out/
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Local env / secrets
+.env
+.env.example
+.env.local
+.env.*.local
+
+# Logs / temp
+*.log
+logs/
+tmp/
+*.tmp
+
+# Test / coverage artifacts
+coverage/
+*.lcov

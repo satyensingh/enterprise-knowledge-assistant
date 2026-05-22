@@ -1,0 +1,117 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: knowledge-copilot
+  datasource:
+    url: jdbc:postgresql://postgres:5432/knowledge_copilot
+    username: postgres
+    password: postgres
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/knowledge-copilot}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://keycloak:8080/realms/knowledge-copilot/protocol/openid-connect/certs}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  sql:
+    init:
+      mode: never
+  jackson:
+    serialization:
+      indent-output: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACING_ENDPOINT:http://jaeger:4318/v1/traces}
+
+app:
+  observability:
+    request-id-header: ${REQUEST_ID_HEADER:X-Request-Id}
+    service-name: ${OBSERVABILITY_SERVICE_NAME:knowledge-copilot}
+  security:
+    enabled: ${APP_SECURITY_ENABLED:true}
+    rate-limit:
+      enabled: ${APP_SECURITY_RATE_LIMIT_ENABLED:true}
+      window-seconds: ${APP_SECURITY_RATE_LIMIT_WINDOW_SECONDS:60}
+      ask-limit-per-window: ${APP_SECURITY_RATE_LIMIT_ASK_LIMIT:120}
+      feedback-limit-per-window: ${APP_SECURITY_RATE_LIMIT_FEEDBACK_LIMIT:240}
+      admin-limit-per-window: ${APP_SECURITY_RATE_LIMIT_ADMIN_LIMIT:90}
+      default-api-limit-per-window: ${APP_SECURITY_RATE_LIMIT_DEFAULT_LIMIT:300}
+      max-tracked-keys: ${APP_SECURITY_RATE_LIMIT_MAX_TRACKED_KEYS:50000}
+  ingestion:
+    root-folder: /app/knowledge-base
+    supported-extensions:
+      - txt
+      - md
+      - pdf
+      - docx
+    jira:
+      enabled: ${JIRA_ENABLED:false}
+      base-url: ${JIRA_BASE_URL:}
+      email: ${JIRA_EMAIL:}
+      api-token: ${JIRA_API_TOKEN:}
+      jql: ${JIRA_JQL:ORDER BY updated DESC}
+    confluence:
+      enabled: ${CONFLUENCE_ENABLED:false}
+      base-url: ${CONFLUENCE_BASE_URL:}
+      email: ${CONFLUENCE_EMAIL:}
+      api-token: ${CONFLUENCE_API_TOKEN:}
+      cql: ${CONFLUENCE_CQL:type=page order by lastmodified desc}
+  chunking:
+    chunk-size: 1200
+    overlap: 150
+  retrieval:
+    top-k: 5
+    candidate-pool-size: 20
+    vector-weight: 0.8
+    lexical-weight: 0.2
+  reindex:
+    initial-delay-ms: 60000
+    fixed-delay-ms: 900000
+  evaluation:
+    question-cluster-candidate-pool-size: ${EVAL_QUESTION_CLUSTER_CANDIDATE_POOL_SIZE:20}
+    question-cluster-similarity-threshold: ${EVAL_QUESTION_CLUSTER_SIMILARITY_THRESHOLD:0.86}
+  embedding:
+    api-key: ${OPENAI_API_KEY:change-me}
+    model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1536}
+  llm:
+    api-key: ${OPENAI_API_KEY:change-me}
+    model: ${OPENAI_MODEL:gpt-4.1-mini}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    max-output-tokens: ${OPENAI_MAX_OUTPUT_TOKENS:800}
+    prompt-version: ${OPENAI_PROMPT_VERSION:v1}
+  vector-store:
+    enabled: ${VECTOR_STORE_ENABLED:true}
+    chroma:
+      base-url: ${CHROMA_BASE_URL:http://chromadb:8000}
+      collection-name: ${CHROMA_COLLECTION_NAME:knowledge_chunks}
+      api-token: ${CHROMA_API_TOKEN:}
+      api-version: ${CHROMA_API_VERSION:v2}
+      tenant: ${CHROMA_TENANT:default_tenant}
+      database: ${CHROMA_DATABASE:default_database}

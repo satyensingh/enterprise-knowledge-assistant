@@ -1,0 +1,129 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: knowledge-copilot-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-http://localhost:8081}
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/knowledge-copilot-realm.json:/opt/keycloak/data/import/knowledge-copilot-realm.json:ro
+
+  postgres:
+    image: postgres:16
+    container_name: knowledge-copilot-postgres
+    environment:
+      POSTGRES_DB: knowledge_copilot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d knowledge_copilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: knowledge-copilot-app
+    depends_on:
+      keycloak:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+      chromadb:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      APP_SECURITY_ENABLED: ${APP_SECURITY_ENABLED:-true}
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:-http://localhost:8081/realms/knowledge-copilot}
+      KEYCLOAK_JWK_SET_URI: ${KEYCLOAK_JWK_SET_URI:-http://keycloak:8080/realms/knowledge-copilot/protocol/openid-connect/certs}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      OPENAI_MAX_OUTPUT_TOKENS: ${OPENAI_MAX_OUTPUT_TOKENS:-800}
+      OPENAI_PROMPT_VERSION: ${OPENAI_PROMPT_VERSION:-v1}
+      CHROMA_BASE_URL: ${CHROMA_BASE_URL:-http://chromadb:8000}
+      CHROMA_COLLECTION_NAME: ${CHROMA_COLLECTION_NAME:-knowledge_chunks}
+      CHROMA_API_TOKEN: ${CHROMA_API_TOKEN:-}
+      CHROMA_API_VERSION: ${CHROMA_API_VERSION:-v2}
+      CHROMA_TENANT: ${CHROMA_TENANT:-default_tenant}
+      CHROMA_DATABASE: ${CHROMA_DATABASE:-default_database}
+      EVAL_QUESTION_CLUSTER_CANDIDATE_POOL_SIZE: ${EVAL_QUESTION_CLUSTER_CANDIDATE_POOL_SIZE:-20}
+      EVAL_QUESTION_CLUSTER_SIMILARITY_THRESHOLD: ${EVAL_QUESTION_CLUSTER_SIMILARITY_THRESHOLD:-0.86}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_EMBEDDING_DIMENSIONS: ${OPENAI_EMBEDDING_DIMENSIONS:-1536}
+      JIRA_ENABLED: ${JIRA_ENABLED:-false}
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_EMAIL: ${JIRA_EMAIL:-}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
+      JIRA_JQL: ${JIRA_JQL:-ORDER BY updated DESC}
+      CONFLUENCE_ENABLED: ${CONFLUENCE_ENABLED:-false}
+      CONFLUENCE_BASE_URL: ${CONFLUENCE_BASE_URL:-}
+      CONFLUENCE_EMAIL: ${CONFLUENCE_EMAIL:-}
+      CONFLUENCE_API_TOKEN: ${CONFLUENCE_API_TOKEN:-}
+      CONFLUENCE_CQL: ${CONFLUENCE_CQL:-type=page order by lastmodified desc}
+      OTLP_TRACING_ENDPOINT: ${OTLP_TRACING_ENDPOINT:-http://jaeger:4318/v1/traces}
+      TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./knowledge-base:/app/knowledge-base:ro
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: knowledge-copilot-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      app:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: knowledge-copilot-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: knowledge-copilot-jaeger
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+
+  chromadb:
+    image: chromadb/chroma:1.5.3
+    container_name: knowledge-copilot-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/data
+
+volumes:
+  postgres_data:
+  chroma_data:

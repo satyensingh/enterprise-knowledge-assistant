@@ -1,0 +1,5 @@
+Observability SLOs
+- 95th percentile ask latency under 2500ms for steady-state local dataset queries.
+- Reindex success count should increase after admin reindex calls.
+- Security metrics must include auth failures and rate-limit rejections.
+- Audit events must be persisted for assistant ask, feedback, admin reindex, and evaluation actions.
